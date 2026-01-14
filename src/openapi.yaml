@@ -20,6 +20,12 @@ paths:
             schema:
               $ref: '#/components/schemas/CreatePixPaymentRequest'
       responses:
+        "200":
+          description: Idempotent replay
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReplayPaymentResponse'
         "202":
           description: Accepted
           content:
@@ -41,6 +47,12 @@ paths:
             schema:
               $ref: '#/components/schemas/CreateCardPaymentRequest'
       responses:
+        "200":
+          description: Idempotent replay
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReplayPaymentResponse'
         "202":
           description: Accepted
           content:
@@ -62,6 +74,12 @@ paths:
             schema:
               $ref: '#/components/schemas/CreateCardPaymentRequest'
       responses:
+        "200":
+          description: Idempotent replay
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReplayPaymentResponse'
         "202":
           description: Accepted
           content:
@@ -86,6 +104,8 @@ paths:
   /webhooks/pix:
     post:
       summary: PIX webhook (mock)
+      servers:
+        - url: http://localhost:8081
       requestBody:
         required: true
         content:
@@ -97,6 +117,8 @@ paths:
   /webhooks/card:
     post:
       summary: Card webhook (mock capture/settlement)
+      servers:
+        - url: http://localhost:8081
       requestBody:
         required: true
         content:
@@ -184,6 +206,13 @@ components:
             maskedPan: { type: string }
             brand: { type: string }
             authCode: { type: string }
+    ReplayPaymentResponse:
+      type: object
+      required: [paymentId, status, replay]
+      properties:
+        paymentId: { type: string }
+        status: { type: string }
+        replay: { type: boolean }
     PaymentIntent:
       type: object
       properties:
