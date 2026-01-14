@@ -1,0 +1,218 @@
+openapi: 3.0.3
+info:
+  title: ClickPay Hub POC API
+  version: "0.2.0"
+servers:
+  - url: http://localhost:8080
+paths:
+  /pix/payments:
+    post:
+      summary: Create PIX payment (async)
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePixPaymentRequest'
+      responses:
+        "202":
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreatePixPaymentResponse'
+  /card/credit/payments:
+    post:
+      summary: Authorize credit card payment (async model, returns 202)
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCardPaymentRequest'
+      responses:
+        "202":
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateCardPaymentResponse'
+  /card/debit/payments:
+    post:
+      summary: Authorize debit card payment (async model, returns 202)
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCardPaymentRequest'
+      responses:
+        "202":
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateCardPaymentResponse'
+  /payments/{paymentId}:
+    get:
+      summary: Get payment status
+      parameters:
+        - in: path
+          name: paymentId
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentIntent'
+  /webhooks/pix:
+    post:
+      summary: PIX webhook (mock)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PixWebhook'
+      responses:
+        "200": { description: OK }
+  /webhooks/card:
+    post:
+      summary: Card webhook (mock capture/settlement)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CardWebhook'
+      responses:
+        "200": { description: OK }
+
+components:
+  schemas:
+    Money:
+      type: object
+      required: [valueCents, currency]
+      properties:
+        valueCents: { type: integer, format: int64, minimum: 1 }
+        currency: { type: string, enum: [BRL] }
+    Payer:
+      type: object
+      required: [name, document, bank]
+      properties:
+        name: { type: string }
+        document: { type: string }
+        bank: { type: string }
+    PixData:
+      type: object
+      required: [key, payerMessage, expiresInSeconds]
+      properties:
+        key: { type: string }
+        payerMessage: { type: string }
+        expiresInSeconds: { type: integer, minimum: 60, maximum: 86400 }
+    CreatePixPaymentRequest:
+      type: object
+      required: [orderId, amount, payer, pix]
+      properties:
+        orderId: { type: string }
+        amount: { $ref: '#/components/schemas/Money' }
+        payer: { $ref: '#/components/schemas/Payer' }
+        pix: { $ref: '#/components/schemas/PixData' }
+    CreatePixPaymentResponse:
+      type: object
+      required: [paymentId, status, method, provider, pix]
+      properties:
+        paymentId: { type: string }
+        status: { type: string }
+        method: { type: string, enum: [PIX] }
+        provider: { type: string }
+        pix:
+          type: object
+          required: [txid, expiresAt, qrCodeBase64, brCode, location]
+          properties:
+            txid: { type: string }
+            expiresAt: { type: string, format: date-time }
+            qrCodeBase64: { type: string }
+            brCode: { type: string }
+            location: { type: string }
+    Card:
+      type: object
+      required: [holderName, number, expMonth, expYear, cvv, brand]
+      properties:
+        holderName: { type: string }
+        number: { type: string }
+        expMonth: { type: integer, minimum: 1, maximum: 12 }
+        expYear: { type: integer }
+        cvv: { type: string }
+        brand: { type: string, example: VISA }
+    CreateCardPaymentRequest:
+      type: object
+      required: [orderId, amount, card]
+      properties:
+        orderId: { type: string }
+        amount: { $ref: '#/components/schemas/Money' }
+        card: { $ref: '#/components/schemas/Card' }
+    CreateCardPaymentResponse:
+      type: object
+      required: [paymentId, status, method, provider]
+      properties:
+        paymentId: { type: string }
+        status: { type: string }
+        method: { type: string, enum: [CARD_CREDIT, CARD_DEBIT] }
+        provider: { type: string }
+        card:
+          type: object
+          properties:
+            maskedPan: { type: string }
+            brand: { type: string }
+            authCode: { type: string }
+    PaymentIntent:
+      type: object
+      properties:
+        PaymentID: { type: string }
+        OrderID: { type: string }
+        IdempotencyKey: { type: string }
+        AmountCents: { type: integer, format: int64 }
+        Currency: { type: string }
+        Method: { type: string }
+        Status: { type: string }
+        Provider: { type: string }
+        E2EID: { type: string, nullable: true }
+        TXID: { type: string, nullable: true }
+        PayerName: { type: string, nullable: true }
+        PayerDocument: { type: string, nullable: true }
+        PayerBank: { type: string, nullable: true }
+        CreatedAt: { type: string, format: date-time }
+        UpdatedAt: { type: string, format: date-time }
+    PixWebhook:
+      type: object
+      required: [paymentId, status, e2eId, txid]
+      properties:
+        paymentId: { type: string }
+        status: { type: string, enum: [PAID, FAILED] }
+        e2eId: { type: string }
+        txid: { type: string }
+    CardWebhook:
+      type: object
+      required: [paymentId, status]
+      properties:
+        paymentId: { type: string }
+        status: { type: string, enum: [PAID, FAILED] }

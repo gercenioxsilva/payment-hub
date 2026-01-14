@@ -1,0 +1,25 @@
+version: "1.0"
+defaults:
+  timeouts:
+    request_ms: 1800
+  retries:
+    max_attempts: 3
+  fallback:
+    max_provider_hops: 2
+providers:
+  pixmock:
+    capabilities: ["PIX"]
+    priority_weight: 100
+  cardmock:
+    capabilities: ["CARD_CREDIT", "CARD_DEBIT"]
+    priority_weight: 100
+routing_rules:
+  - name: "PIX default"
+    when: { method: "PIX" }
+    providers: ["pixmock"]
+  - name: "Card Credit default"
+    when: { method: "CARD_CREDIT" }
+    providers: ["cardmock"]
+  - name: "Card Debit default"
+    when: { method: "CARD_DEBIT" }
+    providers: ["cardmock"]

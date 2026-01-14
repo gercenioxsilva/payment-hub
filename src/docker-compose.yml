@@ -1,0 +1,44 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: clickpay
+      POSTGRES_USER: clickpay
+      POSTGRES_PASSWORD: clickpay
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U clickpay -d clickpay"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+
+  elasticmq:
+    image: softwaremill/elasticmq-native:1.5.7
+    ports:
+      - "9324:9324"
+      - "9325:9325"
+    environment:
+      ELASTICMQ_NODE_ADDRESS: "0.0.0.0"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:9325 || exit 1"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+
+  adminer:
+    image: adminer:4
+    ports:
+      - "8088:8080"
+    depends_on:
+      - postgres
+
+
+  swagger-ui:
+    image: swaggerapi/swagger-ui:v5.17.14
+    ports:
+      - "8089:8080"
+    environment:
+      SWAGGER_JSON: /spec/openapi.yaml
+    volumes:
+      - ./openapi.yaml:/spec/openapi.yaml:ro

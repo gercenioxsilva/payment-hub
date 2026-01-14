@@ -1,0 +1,13 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    { "label": "infra:up", "type": "shell", "command": "make infra-up", "problemMatcher": [] },
+    { "label": "infra:down", "type": "shell", "command": "make infra-down", "problemMatcher": [] },
+    { "label": "db:migrate", "type": "shell", "command": "make migrate", "problemMatcher": [] },
+    { "label": "sqs:create-queue", "type": "shell", "command": "make queue", "problemMatcher": [] },
+    { "label": "run:ingress-api", "type": "shell", "command": "make run-ingress", "problemMatcher": [] },
+    { "label": "run:webhook", "type": "shell", "command": "make run-webhook", "problemMatcher": [] },
+    { "label": "run:publisher", "type": "shell", "command": "make run-publisher", "problemMatcher": [] },
+    { "label": "run:worker", "type": "shell", "command": "make run-worker", "problemMatcher": [] }
+  ]
+}

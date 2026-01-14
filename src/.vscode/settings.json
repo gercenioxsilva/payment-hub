@@ -1,0 +1,4 @@
+{
+  "go.toolsManagement.autoUpdate": true,
+  "go.useLanguageServer": true
+}
