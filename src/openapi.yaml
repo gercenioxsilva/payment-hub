@@ -2,12 +2,18 @@ openapi: 3.0.3
 info:
   title: ClickPay Hub POC API
   version: "0.2.0"
+tags:
+  - name: ingress
+    description: Ingress API (idempotency + validation) for client-facing payment requests.
+  - name: webhook
+    description: Webhook receiver for provider callbacks (normalize and update status).
 servers:
   - url: http://localhost:8080
 paths:
   /pix/payments:
     post:
       summary: Create PIX payment (async)
+      tags: [ingress]
       parameters:
         - in: header
           name: Idempotency-Key
@@ -35,6 +41,7 @@ paths:
   /card/credit/payments:
     post:
       summary: Authorize credit card payment (async model, returns 202)
+      tags: [ingress]
       parameters:
         - in: header
           name: Idempotency-Key
@@ -62,6 +69,7 @@ paths:
   /card/debit/payments:
     post:
       summary: Authorize debit card payment (async model, returns 202)
+      tags: [ingress]
       parameters:
         - in: header
           name: Idempotency-Key
@@ -89,6 +97,7 @@ paths:
   /payments/{paymentId}:
     get:
       summary: Get payment status
+      tags: [ingress]
       parameters:
         - in: path
           name: paymentId
@@ -104,6 +113,7 @@ paths:
   /webhooks/pix:
     post:
       summary: PIX webhook (mock)
+      tags: [webhook]
       servers:
         - url: http://localhost:8081
       requestBody:
@@ -117,6 +127,7 @@ paths:
   /webhooks/card:
     post:
       summary: Card webhook (mock capture/settlement)
+      tags: [webhook]
       servers:
         - url: http://localhost:8081
       requestBody:
