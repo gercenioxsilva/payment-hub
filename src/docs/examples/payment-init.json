@@ -1,0 +1,101 @@
+{
+  "tokenSession": "1b2b8d7c-1111-4c2a-9f0a-555555555555",
+  "partnerUniqueID": "order-3001",
+  "customer": {
+    "iD": "cust-1",
+    "email": "cliente@example.com",
+    "name": "Cliente Teste",
+    "document": "12345678909",
+    "documentType": "CPF",
+    "birthDate": "1990-01-01",
+    "gender": "M",
+    "daysSinceRegistration": 365,
+    "daysSinceLastLogin": 1,
+    "daysSinceLastPasswordChange": 30,
+    "daysSinceLastPurchase": 10,
+    "daysSinceFirstPurchase": 360
+  },
+  "vendor": {
+    "mCC": "5999",
+    "name": "Loja Exemplo",
+    "code": "LJ001",
+    "industry": "Retail",
+    "document": "11222333000181",
+    "documentType": "CNPJ",
+    "daysSinceRegistration": 1000,
+    "daysSinceLastSell": 1,
+    "daysSinceFirstSell": 900
+  },
+  "paymentItems": {
+    "items": [
+      {
+        "detailUniqueID": "item-1",
+        "sku": "SKU-123",
+        "ean": "7891234567890",
+        "amount": 49.90,
+        "productID": 101,
+        "productDescription": "Produto de Teste",
+        "categoryID": 10,
+        "categoryName": "Categoria",
+        "itemQuantity": 1,
+        "split": {
+          "merchantID": "m-1",
+          "merchantDocument": "11222333000181",
+          "merchantDocumentType": "CNPJ",
+          "percent": 100.0,
+          "amount": 49.90
+        },
+        "antiFraud": {
+          "ean": "7891234567890",
+          "deliveryAddressee": "Cliente Teste",
+          "isEmailConfirmed": true,
+          "wasCardChanged": false,
+          "isPhoneNumberConfirmed": true,
+          "loginCredential": "cliente@example.com",
+          "isVIPClient": false,
+          "isEmployeeClient": false,
+          "wasAccountModified": false,
+          "daysSinceLastAccountChange": 90,
+          "fidelityNumber": "FID123",
+          "daysSinceFidelityRegistration": 180,
+          "daysSinceLastPointsExchange": 30,
+          "fidelityBalance": 1000,
+          "amountPointsLastExchange": 200,
+          "phoneChargesInLast30Days": 0,
+          "minutesChargedInLast30Days": 0,
+          "data": { "key": "note", "value": "blue" }
+        },
+        "presentMessage": "Presente"
+      }
+    ]
+  },
+  "paymentData": {
+    "paymentMethods": [
+      {
+        "paymentMethodType": "PIX",
+        "amount": 49.90,
+        "installments": 1,
+        "pix": {
+          "name": "Cliente Teste",
+          "document": "12345678909",
+          "documentType": "CPF",
+          "expirationSeconds": 900
+        },
+        "softDescriptor": "Pedido 3001"
+      }
+    ],
+    "countrycode": "BR",
+    "amount": 49.90,
+    "salesChannel": "WEB"
+  },
+  "frontData": {
+    "sessionID": "sess-123",
+    "ipAddress": "127.0.0.1",
+    "acceptHeader": "application/json",
+    "userAgent": "curl",
+    "cookiesAccepted": true
+  },
+  "isMerchantInitiated": false,
+  "extraInfo": "teste"
+}
+

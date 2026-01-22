@@ -89,3 +89,38 @@ curl -s -X POST http://localhost:8081/webhooks/card \
   -H 'Content-Type: application/json' \
   -d '{"paymentId":"<paymentId>","status":"PAID"}'
 ```
+
+## Payment Init (V2 envelope, HTTP 200)
+Exemplo de requisição (PIX) usando o payload completo (há um arquivo pronto em `docs/examples/payment-init.json`):
+```bash
+curl -s -X POST http://localhost:8080/payments/init \
+  -H 'Content-Type: application/json' \
+  -H 'Idempotency-Key: idem-init-1' \
+  --data-binary @docs/examples/payment-init.json | jq
+```
+
+Resposta (200) no envelope V2:
+```json
+{
+  "status": "Q",
+  "methods": [
+    {
+      "methodType": "PIX",
+      "status": "Q",
+      "methodId": 1,
+      "operationId": "<paymentId>",
+      "methodKey": "<paymentId>",
+      "message": {"source":0, "code":"OK", "message":"QUEUED", "info":""},
+      "redirectInfo": {"url":""},
+      "acquirer": [],
+      "antifraud": [],
+      "pixInfo": {"qRContent":"", "qrCopyPaste":"", "qRImage":""}
+    }
+  ],
+  "paymentKey": "<paymentId>",
+  "partnerUniqueId": "order-3001",
+  "code": 200,
+  "message": {"source":0, "code":"OK", "message":"QUEUED", "info":""},
+  "operationId": "<paymentId>"
+}
+```
