@@ -318,15 +318,25 @@ type StartPaymentResponse struct {
 
 
 func main() {
-	cfg := config.Load()
-	ctx := context.Background()
+    cfg := config.Load()
+    ctx := context.Background()
 
-	db, err := persistence.Connect(ctx, cfg.DBURL)
-	if err != nil { log.Fatal(err) }
-	repo := persistence.Repo{DB: db}
+    db, err := persistence.Connect(ctx, cfg.DBURL)
+    if err != nil { log.Fatal(err) }
+    repo := persistence.Repo{DB: db}
 
-	v := validator.New()
-	r := chi.NewRouter()
+    v := validator.New()
+    r := chi.NewRouter()
+
+    // Liveness/Readiness endpoint
+    r.Get("/health", func(w http.ResponseWriter, req *http.Request) {
+        if err := db.Ping(req.Context()); err != nil {
+            http.Error(w, "unhealthy: "+err.Error(), http.StatusInternalServerError)
+            return
+        }
+        w.Header().Set("Content-Type","application/json")
+        json.NewEncoder(w).Encode(map[string]any{"status":"ok"})
+    })
 
 	// Generic payment initializer for the extended schema
 	r.Post("/payments/init", func(w http.ResponseWriter, req *http.Request) {

@@ -132,6 +132,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaymentIntent'
+  /health:
+    get:
+      summary: Healthcheck
+      tags: [ingress]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: ok }
   /webhooks/pix:
     post:
       summary: PIX webhook (mock)
