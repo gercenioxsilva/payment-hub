@@ -52,6 +52,14 @@ Depois de `make infra-up`, acesse:
 - ElasticMQ UI: http://localhost:9325
 - Adminer: http://localhost:8088 (System: PostgreSQL, Server: postgres, User/Pass/DB: clickpay)
 
+## Arquitetura (mapeada ao diagrama)
+- **Ingress API** (`apps/ingress-api`): expõe endpoints públicos, validação e idempotência.
+- **Fila/Stream** (`apps/outbox-publisher` + ElasticMQ): publica eventos de pagamento.
+- **Orchestrator Worker** (`apps/orchestrator-worker`): consome eventos e roteia para provedores (mock).
+- **Webhook Receiver** (`apps/webhook-receiver`): recebe callbacks e normaliza status.
+- **Payment Ledger** (Postgres): persistência do state machine de pagamentos.
+- **Read Model**: consulta de status via `/payments/{paymentId}`.
+
 ## Cartão (crédito/débito)
 ### Crédito
 ```bash
