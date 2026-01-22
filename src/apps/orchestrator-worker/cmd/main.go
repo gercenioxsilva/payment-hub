@@ -91,7 +91,6 @@ func main() {
 			MaxNumberOfMessages: 10,
 			WaitTimeSeconds: 10,
 			VisibilityTimeout: 30,
-			AttributeNames: []sqs.QueueAttributeName{"All"},
 		})
 		if err != nil { log.Println("receive:", err); continue }
 		if len(msgs.Messages) == 0 { continue }
@@ -150,67 +149,66 @@ func handleMessage(ctx context.Context, repo persistence.Repo, policy config.Pol
 		prov := findProvider(provs, provName)
 		if prov == nil { attemptProvider++; continue }
 
-		s := bulk[provName]
-		s.acquire()
-		respAny, err := cbs[provName].Execute(func() (any, error) {
-			var lastErr error
-			operation := func() error {
-				// call adapter
-				ar := providers.AuthorizeRequest{
-					PaymentID: p.PaymentID,
-					AmountCents: p.AmountCents,
-					Currency: p.Currency,
-					// For PIX we store key/message in request in real impl.
-					// In POC we reuse payer_name as pix key placeholder when PIX.
-					PixKey: valueOr(p.PayerName, "email@merchant.com"),
-					PixPayerMessage: "POC",
-					PixExpiresSec: 900,
-					CardHolderName: valueOr(p.PayerName, "Maria Silva"),
-					CardNumber: "4111111111111111",
-					CardExpMonth: 12,
-					CardExpYear: 2030,
-					CardCVV: "123",
-					CardBrand: "VISA",
-				}
-				res, err := prov.Authorize(ctx, method, ar)
-				if err != nil { lastErr = err; return err }
-				// persist outcome
-				status := domain.StatusPending
-				switch res.Status {
-				case "AUTHORIZED":
-					status = domain.StatusPending
-				case "PAID":
-					status = domain.StatusPaid
-				case "FAILED":
-					status = domain.StatusFailed
-				}
-				_ = repo.UpdateProviderFields(ctx, p.PaymentID, status, persistence.ProviderFields{
-					Provider: res.Provider,
-					E2EID: res.E2EID,
-					TXID: res.TxID,
-					CardBrand: res.Brand,
-					CardMaskedPAN: res.MaskedPAN,
-					CardAuthCode: res.AuthCode,
-				})
-				return nil
+	s := bulk[provName]
+	s.acquire()
+	_, execErr := cbs[provName].Execute(func() (any, error) {
+		operation := func() error {
+			// call adapter
+			ar := providers.AuthorizeRequest{
+				PaymentID: p.PaymentID,
+				AmountCents: p.AmountCents,
+				Currency: p.Currency,
+				// For PIX we store key/message in request in real impl.
+				// In POC we reuse payer_name as pix key placeholder when PIX.
+				PixKey: valueOr(p.PayerName, "email@merchant.com"),
+				PixPayerMessage: "POC",
+				PixExpiresSec: 900,
+				CardHolderName: valueOr(p.PayerName, "Maria Silva"),
+				CardNumber: "4111111111111111",
+				CardExpMonth: 12,
+				CardExpYear: 2030,
+				CardCVV: "123",
+				CardBrand: "VISA",
 			}
-
-			b := backoff.NewExponentialBackOff()
-			b.InitialInterval = 150 * time.Millisecond
-			b.MaxInterval = 2 * time.Second
-			b.MaxElapsedTime = 0
-			return nil, backoff.Retry(backoff.WithMaxRetries(operation, uint64(maxAttempts-1)), b)
-		}
-
-		_, err := respAny, err
-		if err != nil { return nil, err }
-		return nil, nil
-	})
-		s.release()
-
-		if err == nil {
+			res, err := prov.Authorize(ctx, method, ar)
+			if err != nil { return err }
+			// persist outcome
+			status := domain.StatusPending
+			switch res.Status {
+			case "AUTHORIZED":
+				status = domain.StatusPending
+			case "PAID":
+				status = domain.StatusPaid
+			case "FAILED":
+				status = domain.StatusFailed
+			}
+			_ = repo.UpdateProviderFields(ctx, p.PaymentID, status, persistence.ProviderFields{
+				Provider: res.Provider,
+				E2EID: res.E2EID,
+				TXID: res.TxID,
+				CardBrand: res.Brand,
+				CardMaskedPAN: res.MaskedPAN,
+				CardAuthCode: res.AuthCode,
+			})
 			return nil
 		}
+
+		b := backoff.NewExponentialBackOff()
+		b.InitialInterval = 150 * time.Millisecond
+		b.MaxInterval = 2 * time.Second
+		b.MaxElapsedTime = 0
+		if err := backoff.Retry(operation, backoff.WithMaxRetries(b, uint64(maxAttempts-1))); err != nil {
+			return nil, err
+		}
+		return "ok", nil
+	})
+	s.release()
+
+	if execErr == nil {
+		return nil
+	}
+
+	err = execErr
 
 		attemptProvider++
 		if attemptProvider >= policy.Defaults.Fallback.MaxProviderHops {

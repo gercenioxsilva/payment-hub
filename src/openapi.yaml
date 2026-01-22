@@ -10,6 +10,28 @@ tags:
 servers:
   - url: http://localhost:8080
 paths:
+  /payments/init:
+    post:
+      summary: Start payment (generic initializer)
+      tags: [ingress]
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartPaymentRequest'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StartPaymentResponseV2'
   /pix/payments:
     post:
       summary: Create PIX payment (async)
@@ -141,6 +163,255 @@ paths:
 
 components:
   schemas:
+    StartPaymentRequest:
+      type: object
+      properties:
+        tokenSession: { type: string }
+        partnerUniqueID: { type: string }
+        customer: { $ref: '#/components/schemas/StartCustomer' }
+        vendor: { $ref: '#/components/schemas/StartVendor' }
+        paymentItems: { $ref: '#/components/schemas/StartPaymentItems' }
+        paymentData: { $ref: '#/components/schemas/StartPaymentData' }
+        frontData: { $ref: '#/components/schemas/StartFrontData' }
+        isMerchantInitiated: { type: boolean }
+        extraInfo: { type: string }
+    StartCustomer:
+      type: object
+      properties:
+        iD: { type: string }
+        email: { type: string }
+        name: { type: string }
+        document: { type: string }
+        documentType: { type: string }
+        birthDate: { type: string, format: date }
+        gender: { type: string }
+        daysSinceRegistration: { type: integer }
+        daysSinceLastLogin: { type: integer }
+        daysSinceLastPasswordChange: { type: integer }
+        daysSinceLastPurchase: { type: integer }
+        daysSinceFirstPurchase: { type: integer }
+    StartVendor:
+      type: object
+      properties:
+        mCC: { type: string }
+        name: { type: string }
+        code: { type: string }
+        industry: { type: string }
+        document: { type: string }
+        documentType: { type: string }
+        daysSinceRegistration: { type: integer }
+        daysSinceLastSell: { type: integer }
+        daysSinceFirstSell: { type: integer }
+    StartPaymentItems:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/StartItem'
+    StartItem:
+      type: object
+      properties:
+        detailUniqueID: { type: string }
+        sku: { type: string }
+        ean: { type: string }
+        amount: { type: number, format: double }
+        productID: { type: integer }
+        productDescription: { type: string }
+        categoryID: { type: integer }
+        categoryName: { type: string }
+        itemQuantity: { type: integer }
+        split: { $ref: '#/components/schemas/StartSplit' }
+        antiFraud: { $ref: '#/components/schemas/StartAntiFraud' }
+        presentMessage: { type: string }
+    StartSplit:
+      type: object
+      properties:
+        merchantID: { type: string }
+        merchantDocument: { type: string }
+        merchantDocumentType: { type: string }
+        percent: { type: number, format: double }
+        amount: { type: number, format: double }
+    StartAntiFraud:
+      type: object
+      properties:
+        ean: { type: string }
+        deliveryAddressee: { type: string }
+        isEmailConfirmed: { type: boolean }
+        wasCardChanged: { type: boolean }
+        isPhoneNumberConfirmed: { type: boolean }
+        loginCredential: { type: string }
+        isVIPClient: { type: boolean }
+        isEmployeeClient: { type: boolean }
+        wasAccountModified: { type: boolean }
+        daysSinceLastAccountChange: { type: integer }
+        fidelityNumber: { type: string }
+        daysSinceFidelityRegistration: { type: integer }
+        daysSinceLastPointsExchange: { type: integer }
+        fidelityBalance: { type: integer }
+        amountPointsLastExchange: { type: integer }
+        phoneChargesInLast30Days: { type: integer }
+        minutesChargedInLast30Days: { type: integer }
+        data: { $ref: '#/components/schemas/StartKeyValue' }
+    StartKeyValue:
+      type: object
+      properties:
+        key: { type: string }
+        value: { type: string }
+    StartPaymentData:
+      type: object
+      properties:
+        paymentMethods:
+          type: array
+          items:
+            $ref: '#/components/schemas/StartPaymentMethod'
+        antiFraud: { $ref: '#/components/schemas/StartAntiFraud' }
+        deliveryAddress: { $ref: '#/components/schemas/StartAddress' }
+        countrycode: { type: string }
+        amount: { type: number, format: double }
+        salesChannel: { type: string }
+    StartPaymentMethod:
+      type: object
+      properties:
+        paymentMethodType: { type: string }
+        amount: { type: number, format: double }
+        installments: { type: integer }
+        cardInfo: { $ref: '#/components/schemas/StartCardInfo' }
+        boletoInfo: { $ref: '#/components/schemas/StartBoletoInfo' }
+        customer: { $ref: '#/components/schemas/StartCustomer' }
+        pix: { $ref: '#/components/schemas/StartPixInfo' }
+        softDescriptor: { type: string }
+    StartCardInfo:
+      type: object
+      properties:
+        token: { type: string, format: uuid }
+        tokenProvider: { type: string }
+        cardHolderName: { type: string }
+        alias: { type: string }
+        expirationMonth: { type: integer }
+        expirationYear: { type: integer }
+        billingInfo: { $ref: '#/components/schemas/StartBillingInfo' }
+        externalProviderInfo: { type: string }
+        brandName: { type: string }
+        tokenSingleUse: { type: integer }
+        saveCard: { type: boolean }
+    StartBillingInfo:
+      type: object
+      properties:
+        number: { type: string }
+        document: { type: string }
+        documentType: { type: string }
+        name: { type: string }
+        phone: { type: string }
+        address: { $ref: '#/components/schemas/StartAddress' }
+    StartBoletoInfo:
+      type: object
+      properties:
+        billingInfo: { $ref: '#/components/schemas/StartBillingInfo' }
+    StartPixInfo:
+      type: object
+      properties:
+        name: { type: string }
+        document: { type: string }
+        documentType: { type: string }
+        expirationSeconds: { type: integer }
+    StartAddress:
+      type: object
+      properties:
+        street: { type: string }
+        number: { type: string }
+        complement: { type: string }
+        neighborhood: { type: string }
+        city: { type: string }
+        state: { type: string }
+        country: { type: string }
+        postalCode: { type: string }
+        phone: { type: string }
+    StartFrontData:
+      type: object
+      properties:
+        sessionID: { type: string }
+        ipAddress: { type: string }
+        acceptHeader: { type: string }
+        userAgent: { type: string }
+        cookiesAccepted: { type: boolean }
+    StartPaymentResponse:
+      type: object
+      required: [paymentId, status, method, provider]
+      properties:
+        paymentId: { type: string }
+        status: { type: string }
+        method: { type: string }
+        provider: { type: string }
+    StartPaymentResponseV2:
+      type: object
+      required: [status, methods, paymentKey, partnerUniqueId, code, message, operationId]
+      properties:
+        status: { type: string }
+        methods:
+          type: array
+          items:
+            $ref: '#/components/schemas/MethodReturn'
+        paymentKey: { type: string }
+        partnerUniqueId: { type: string }
+        code: { type: integer }
+        message: { $ref: '#/components/schemas/APIMessage' }
+        operationId: { type: string }
+    MethodReturn:
+      type: object
+      properties:
+        methodType: { type: string }
+        status: { type: string }
+        methodId: { type: integer }
+        operationId: { type: string }
+        methodKey: { type: string }
+        message: { $ref: '#/components/schemas/APIMessage' }
+        redirectInfo: { $ref: '#/components/schemas/RedirectInfo' }
+        acquirer:
+          type: array
+          items: { $ref: '#/components/schemas/AcquirerInfo' }
+        antifraud:
+          type: array
+          items: { $ref: '#/components/schemas/AntifraudInfo' }
+        pixInfo: { $ref: '#/components/schemas/PixReturnInfo' }
+        cryptoInfo: { $ref: '#/components/schemas/CryptoReturnInfo' }
+    APIMessage:
+      type: object
+      properties:
+        source: { type: integer }
+        code: { type: string }
+        message: { type: string }
+        info: { type: string }
+    RedirectInfo:
+      type: object
+      properties:
+        url: { type: string }
+    AcquirerInfo:
+      type: object
+      properties:
+        name: { type: string }
+        status: { type: string }
+        message: { type: string }
+    AntifraudInfo:
+      type: object
+      properties:
+        name: { type: string }
+        status: { type: string }
+        message: { type: string }
+    PixReturnInfo:
+      type: object
+      properties:
+        qRContent: { type: string }
+        qrCopyPaste: { type: string }
+        qRImage: { type: string }
+    CryptoReturnInfo:
+      type: object
+      properties:
+        coinValue: { type: string }
+        coinRateCurrency: { type: string }
+        coinAddr: { type: string }
+        coinQRCodeUrl: { type: string }
+        coin: { type: string }
     Money:
       type: object
       required: [valueCents, currency]
